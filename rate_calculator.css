@@ -1,0 +1,136 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #132238;
+  background: linear-gradient(160deg, #f2f6ff 0%, #dbe8ff 50%, #f6fbff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.calculator {
+  background-color: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 20px 55px rgba(19, 34, 56, 0.12);
+  max-width: 480px;
+  width: 100%;
+  padding: 2.5rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.calculator__header h1 {
+  margin: 0;
+  font-size: 1.85rem;
+}
+
+.calculator__header p {
+  margin: 0.5rem 0 0;
+  color: #4c5d7a;
+  line-height: 1.5;
+}
+
+.calculator__form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.calculator__label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  color: #22324f;
+  gap: 0.5rem;
+}
+
+.calculator__label input {
+  border: 1px solid #cad3e0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+  appearance: textfield;
+}
+
+.calculator__label input:focus {
+  outline: none;
+  border-color: #3c73ff;
+  box-shadow: 0 0 0 3px rgba(60, 115, 255, 0.15);
+}
+
+.calculator__label input::-webkit-outer-spin-button,
+.calculator__label input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #3c73ff, #2555ff);
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 25px rgba(37, 85, 255, 0.2);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.calculator__result {
+  background-color: #f5f8ff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  color: #1c2a45;
+  font-weight: 600;
+  min-height: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.calculator__formula {
+  margin: 0;
+  font-weight: 500;
+  color: #3c4f74;
+}
+
+.calculator__explanation {
+  margin: 0;
+  font-weight: 400;
+  color: #4d5c7c;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 1.5rem;
+  }
+
+  .calculator {
+    padding: 2rem 1.5rem;
+  }
+
+  .calculator__header h1 {
+    font-size: 1.6rem;
+  }
+}
