@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dispatch Earnings Calculator</title>
+    <link rel="stylesheet" href="rate_calculator.css" />
+  </head>
+  <body>
+    <main class="calculator">
+      <header class="calculator__header">
+        <h1>Dispatch Earnings Calculator</h1>
+        <p>
+          Enter the miles and payout for a load to see how much the dispatch team
+          should receive.
+        </p>
+      </header>
+
+      <form id="calculator-form" class="calculator__form" autocomplete="off">
+        <label class="calculator__label" for="miles">
+          Miles driven
+          <input
+            id="miles"
+            name="miles"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="e.g. 475"
+            required
+          />
+        </label>
+
+        <label class="calculator__label" for="amount">
+          Load payout (USD)
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="e.g. 1350.00"
+            required
+          />
+        </label>
+
+        <button type="submit">Calculate earnings</button>
+      </form>
+
+      <section class="calculator__result" aria-live="polite">
+        <p id="result-message">Enter load details to calculate earnings.</p>
+        <p id="rate-formula" class="calculator__formula" hidden></p>
+        <p id="result-formula" class="calculator__formula" hidden></p>
+        <p id="result-explanation" class="calculator__explanation" hidden></p>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('calculator-form');
+      const resultMessage = document.getElementById('result-message');
+      const rateFormula = document.getElementById('rate-formula');
+      const resultFormula = document.getElementById('result-formula');
+      const resultExplanation = document.getElementById('result-explanation');
+
+      const MAX_RATE = 0.1;
+      const MIN_RATE = 0.03;
+      const RATE_THRESHOLD = 500;
+      const RATE_SLOPE = (MAX_RATE - MIN_RATE) / RATE_THRESHOLD;
+
+      function formatCurrency(value) {
+        return value.toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        });
+      }
+
+      function calculateRate(miles) {
+        const clampedMiles = Math.max(0, miles);
+
+        if (clampedMiles >= RATE_THRESHOLD) {
+          return {
+            rate: MIN_RATE,
+            formula: `Rate formula: ${(MIN_RATE * 100).toFixed(
+              0
+            )}% flat for loads at or above ${RATE_THRESHOLD} miles.`,
+            details: {
+              type: 'flat',
+              threshold: RATE_THRESHOLD,
+              flatPercent: (MIN_RATE * 100).toFixed(0),
+            },
+          };
+        }
+
+        const rate = MAX_RATE - RATE_SLOPE * clampedMiles;
+        const maxRatePercent = (MAX_RATE * 100).toFixed(0);
+        const slopePercent = (RATE_SLOPE * 100).toFixed(3);
+        const milesRounded = clampedMiles.toFixed(0);
+        const computedPercent = (rate * 100).toFixed(2);
+
+        return {
+          rate,
+          formula: `Rate formula: ${maxRatePercent}% - (${slopePercent}% × ${milesRounded}) ≈ ${computedPercent}%.`,
+          details: {
+            type: 'slope',
+            basePercent: maxRatePercent,
+            slopePercent,
+            milesRounded,
+            computedPercent,
+          },
+        };
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const miles = Number(form.miles.value);
+        const amount = Number(form.amount.value);
+
+        if (!Number.isFinite(miles) || miles < 0) {
+          resultMessage.textContent = 'Please enter a valid non-negative value for miles.';
+          rateFormula.hidden = true;
+          resultFormula.hidden = true;
+          resultExplanation.hidden = true;
+          return;
+        }
+
+        if (!Number.isFinite(amount) || amount < 0) {
+          resultMessage.textContent = 'Please enter a valid non-negative value for the payout.';
+          rateFormula.hidden = true;
+          resultFormula.hidden = true;
+          resultExplanation.hidden = true;
+          return;
+        }
+
+        const { rate, formula, details } = calculateRate(miles);
+        const earnings = amount * rate;
+
+        const formattedEarnings = formatCurrency(earnings);
+        const formattedAmount = formatCurrency(amount);
+        const formattedRate = (rate * 100).toFixed(2);
+
+        resultMessage.textContent = `Dispatch earnings: ${formattedEarnings} at a ${formattedRate}% rate.`;
+        rateFormula.textContent = formula;
+        resultFormula.textContent = `Formula: ${formattedAmount} × ${formattedRate}% = ${formattedEarnings}`;
+        if (details?.type === 'slope') {
+          resultExplanation.textContent = `Explanation: Start at ${details.basePercent}% for a zero-mile trip. Subtract ${details.slopePercent}% for every mile. With ${details.milesRounded} miles: ${details.basePercent}% - (${details.slopePercent}% × ${details.milesRounded}) ≈ ${details.computedPercent}%.`;
+        } else {
+          resultExplanation.textContent = `Explanation: Trips of ${details.threshold} miles or more always use a flat ${details.flatPercent}% rate—no per-mile reduction.`;
+        }
+        rateFormula.hidden = false;
+        resultFormula.hidden = false;
+        resultExplanation.hidden = false;
+      });
+    </script>
+  </body>
+</html>
