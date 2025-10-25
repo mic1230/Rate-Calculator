@@ -9,11 +9,32 @@
   <body>
     <main class="calculator">
       <header class="calculator__header">
-        <h1>Dispatch Earnings Calculator</h1>
-        <p>
-          Enter the miles and payout for a load to see how much the dispatch team
-          should receive.
-        </p>
+        <span class="calculator__badge">Trucking Ops</span>
+        <div class="calculator__title">
+          <h1>Dispatch Earnings Calculator</h1>
+          <p>
+            Enter the miles and payout for a load to see how much the dispatch
+            team should receive.
+          </p>
+        </div>
+        <div class="calculator__illustration" aria-hidden="true">
+          <svg viewBox="0 0 120 60" role="presentation">
+            <defs>
+              <linearGradient id="truckGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#3c73ff" />
+                <stop offset="100%" stop-color="#00c6ff" />
+              </linearGradient>
+            </defs>
+            <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke="url(#truckGradient)" stroke-width="4">
+              <path d="M14 32h46v-14a6 6 0 0 0-6-6H20a6 6 0 0 0-6 6z" fill="#f4f7ff" stroke="url(#truckGradient)" />
+              <path d="M60 32h32l12 10v12H60z" fill="#e8f0ff" />
+              <path d="M92 32V18h6l10 14z" fill="#dbe6ff" />
+              <circle cx="34" cy="46" r="8" fill="#132238" />
+              <circle cx="78" cy="46" r="8" fill="#132238" />
+              <path d="M10 32h92" />
+            </g>
+          </svg>
+        </div>
       </header>
 
       <form id="calculator-form" class="calculator__form" autocomplete="off">
@@ -46,6 +67,69 @@
         <button type="submit">Calculate earnings</button>
       </form>
 
+      <section class="calculator__summary" aria-live="polite">
+        <div class="calculator__summary-header">
+          <h2>Load snapshot</h2>
+          <p>Track the key numbers before you run the calculation.</p>
+        </div>
+        <div class="calculator__summary-grid">
+          <article class="calculator__summary-card">
+            <div class="calculator__summary-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path
+                  d="M4 18h16M4 6h16M4 12h10"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="calculator__summary-label">Miles</p>
+              <p id="preview-miles" class="calculator__summary-value">--</p>
+            </div>
+          </article>
+          <article class="calculator__summary-card">
+            <div class="calculator__summary-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path
+                  d="M12 3v18M5 9h14M5 15h14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="calculator__summary-label">Load payout</p>
+              <p id="preview-amount" class="calculator__summary-value">--</p>
+            </div>
+          </article>
+          <article class="calculator__summary-card">
+            <div class="calculator__summary-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path
+                  d="M4 14a8 8 0 0 1 16 0v4H4zm4 4v1m8-1v1"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="calculator__summary-label">Dispatch share</p>
+              <p id="preview-rate" class="calculator__summary-value">--</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section class="calculator__result" aria-live="polite">
         <p id="result-message">Enter load details to calculate earnings.</p>
         <p id="rate-formula" class="calculator__formula" hidden></p>
@@ -60,6 +144,9 @@
       const rateFormula = document.getElementById('rate-formula');
       const resultFormula = document.getElementById('result-formula');
       const resultExplanation = document.getElementById('result-explanation');
+      const previewMiles = document.getElementById('preview-miles');
+      const previewAmount = document.getElementById('preview-amount');
+      const previewRate = document.getElementById('preview-rate');
 
       const MAX_RATE = 0.1;
       const MIN_RATE = 0.03;
@@ -109,6 +196,33 @@
         };
       }
 
+      function updatePreview() {
+        const miles = Number(form.miles.value);
+        const amount = Number(form.amount.value);
+
+        const hasMiles = Number.isFinite(miles) && miles >= 0;
+        const hasAmount = Number.isFinite(amount) && amount >= 0;
+
+        previewMiles.textContent = hasMiles
+          ? `${Math.round(miles).toLocaleString()} mi`
+          : '--';
+
+        previewAmount.textContent = hasAmount
+          ? formatCurrency(amount)
+          : '--';
+
+        if (hasMiles && hasAmount) {
+          const { rate } = calculateRate(miles);
+          previewRate.textContent = `${(rate * 100).toFixed(2)}%`; 
+        } else {
+          previewRate.textContent = '--';
+        }
+      }
+
+      updatePreview();
+
+      form.addEventListener('input', updatePreview);
+
       form.addEventListener('submit', (event) => {
         event.preventDefault();
 
@@ -120,6 +234,7 @@
           rateFormula.hidden = true;
           resultFormula.hidden = true;
           resultExplanation.hidden = true;
+          updatePreview();
           return;
         }
 
@@ -128,6 +243,7 @@
           rateFormula.hidden = true;
           resultFormula.hidden = true;
           resultExplanation.hidden = true;
+          updatePreview();
           return;
         }
 
@@ -149,6 +265,8 @@
         rateFormula.hidden = false;
         resultFormula.hidden = false;
         resultExplanation.hidden = false;
+
+        updatePreview();
       });
     </script>
   </body>
