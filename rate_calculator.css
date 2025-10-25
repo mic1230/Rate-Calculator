@@ -7,34 +7,88 @@ body {
   min-height: 100vh;
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #132238;
-  background: linear-gradient(160deg, #f2f6ff 0%, #dbe8ff 50%, #f6fbff 100%);
+  background: radial-gradient(circle at 0% 0%, rgba(0, 198, 255, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 100% 0%, rgba(60, 115, 255, 0.18) 0%, transparent 55%),
+    linear-gradient(160deg, #f2f6ff 0%, #dbe8ff 50%, #f6fbff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 3rem 2rem;
 }
 
 .calculator {
   background-color: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 20px 55px rgba(19, 34, 56, 0.12);
-  max-width: 480px;
+  border-radius: 22px;
+  box-shadow: 0 30px 60px rgba(19, 34, 56, 0.18);
+  max-width: 620px;
   width: 100%;
-  padding: 2.5rem 2.25rem;
+  padding: 2.75rem 2.75rem 3rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.4rem;
+  position: relative;
+  overflow: hidden;
 }
 
-.calculator__header h1 {
+.calculator::after {
+  content: "";
+  position: absolute;
+  inset: -30% auto auto -10%;
+  width: 220px;
+  height: 220px;
+  background: linear-gradient(135deg, rgba(0, 198, 255, 0.12), rgba(60, 115, 255, 0.05));
+  filter: blur(0px);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.calculator__header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: start;
+  position: relative;
+  z-index: 1;
+}
+
+.calculator__badge {
+  grid-column: 1 / -1;
+  justify-self: start;
+  background: rgba(37, 85, 255, 0.1);
+  color: #2555ff;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+}
+
+.calculator__title h1 {
   margin: 0;
-  font-size: 1.85rem;
+  font-size: 2.15rem;
 }
 
-.calculator__header p {
+.calculator__title p {
   margin: 0.5rem 0 0;
   color: #4c5d7a;
   line-height: 1.5;
+}
+
+.calculator__illustration {
+  width: 140px;
+  height: auto;
+  background: linear-gradient(180deg, rgba(219, 232, 255, 0.65) 0%, rgba(244, 247, 255, 0.2) 100%);
+  border-radius: 18px;
+  padding: 0.75rem;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(37, 85, 255, 0.08);
+}
+
+.calculator__illustration svg {
+  width: 100%;
+  height: auto;
 }
 
 .calculator__form {
@@ -94,6 +148,74 @@ button:active {
   box-shadow: none;
 }
 
+.calculator__summary {
+  background: linear-gradient(140deg, rgba(60, 115, 255, 0.12), rgba(0, 198, 255, 0.1));
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.calculator__summary-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.calculator__summary-header p {
+  margin: 0.35rem 0 0;
+  color: #364c73;
+  font-size: 0.95rem;
+}
+
+.calculator__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.calculator__summary-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  box-shadow: 0 12px 24px rgba(19, 34, 56, 0.08);
+}
+
+.calculator__summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(60, 115, 255, 0.15), rgba(0, 198, 255, 0.3));
+  color: #2555ff;
+  display: grid;
+  place-items: center;
+}
+
+.calculator__summary-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.calculator__summary-label {
+  margin: 0;
+  color: #51668c;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.calculator__summary-value {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #132238;
+}
+
 .calculator__result {
   background-color: #f5f8ff;
   border-radius: 12px;
@@ -127,10 +249,19 @@ button:active {
   }
 
   .calculator {
-    padding: 2rem 1.5rem;
+    padding: 2rem 1.5rem 2.25rem;
   }
 
-  .calculator__header h1 {
-    font-size: 1.6rem;
+  .calculator__header {
+    grid-template-columns: 1fr;
+  }
+
+  .calculator__illustration {
+    justify-self: start;
+    width: 120px;
+  }
+
+  .calculator__title h1 {
+    font-size: 1.7rem;
   }
 }
