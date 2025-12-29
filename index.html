@@ -62,12 +62,17 @@
         </div>
         <div id="history-sections" class="calculator__sections"></div>
         <div class="calculator__overall">
-          <span>Total earnings (all sections)</span>
+          <span>Total earnings (all weeks)</span>
           <span id="history-total">$0.00</span>
         </div>
-        <button type="button" id="new-section" class="calculator__new-section">
-          Start new section
-        </button>
+        <div class="calculator__history-actions">
+          <button type="button" id="new-section" class="calculator__new-section">
+            Start new week
+          </button>
+          <button type="button" id="download-csv" class="calculator__download">
+            Download CSV
+          </button>
+        </div>
       </section>
     </main>
 
@@ -81,6 +86,7 @@
       const historyTotal = document.getElementById('history-total');
       const resetHistoryButton = document.getElementById('reset-history');
       const newSectionButton = document.getElementById('new-section');
+      const downloadCsvButton = document.getElementById('download-csv');
 
       const MAX_RATE = 0.1;
       const MIN_RATE = 0.03;
@@ -97,6 +103,34 @@
 
       function formatNumber(value) {
         return value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+      }
+
+      function escapeCsv(value) {
+        const stringValue = String(value ?? '');
+        if (/[",\n]/.test(stringValue)) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      }
+
+      function buildCsv(sections) {
+        const rows = [['Week', 'Payout', 'Miles', 'Rate', 'Earnings']];
+        sections.forEach((section, index) => {
+          const sectionLabel = `Week ${index + 1}`;
+          if (!section.entries.length) {
+            return;
+          }
+          section.entries.forEach((entry) => {
+            rows.push([
+              sectionLabel,
+              formatCurrency(entry.amount),
+              formatNumber(entry.miles),
+              `${(entry.rate * 100).toFixed(2)}%`,
+              formatCurrency(entry.earnings),
+            ]);
+          });
+        });
+        return rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
       }
 
       function loadHistory() {
@@ -145,7 +179,7 @@
           const sectionHeader = document.createElement('div');
           sectionHeader.className = 'calculator__section-header';
           sectionHeader.innerHTML = `
-            <h3>Section ${index + 1}</h3>
+            <h3>Week ${index + 1}</h3>
             <button type="button" class="calculator__edit" data-section="${section.id}">
               Edit
             </button>
@@ -155,7 +189,7 @@
           tableWrapper.className = 'calculator__table-wrapper';
           const table = document.createElement('table');
           table.className = 'calculator__table';
-          table.setAttribute('aria-label', `Calculation history section ${index + 1}`);
+          table.setAttribute('aria-label', `Calculation history week ${index + 1}`);
           table.innerHTML = `
             <thead>
               <tr>
@@ -174,7 +208,7 @@
             const emptyRow = document.createElement('tr');
             const emptyCell = document.createElement('td');
             emptyCell.colSpan = 5;
-            emptyCell.textContent = 'No saved calculations in this section yet.';
+            emptyCell.textContent = 'No saved calculations in this week yet.';
             emptyCell.className = 'calculator__empty';
             emptyRow.appendChild(emptyCell);
             tbody.appendChild(emptyRow);
@@ -347,7 +381,7 @@
 
       resetHistoryButton.addEventListener('click', () => {
         const shouldReset = window.confirm(
-          'Delete all calculations and sections? This cannot be undone.'
+          'Delete all calculations and weeks? This cannot be undone.'
         );
         if (!shouldReset) {
           return;
@@ -489,6 +523,22 @@
         activeSectionId = newSection.id;
         saveHistory(historySectionsData);
         renderHistory(historySectionsData);
+      });
+
+      downloadCsvButton.addEventListener('click', () => {
+        const csv = buildCsv(historySectionsData);
+        if (!csv.trim()) {
+          return;
+        }
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'dispatch-calculations.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
       });
     </script>
   </body>

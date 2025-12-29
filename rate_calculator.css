@@ -277,6 +277,22 @@ button:active {
   font-size: 0.95rem;
 }
 
+.calculator__history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.calculator__download {
+  align-self: flex-start;
+  background: #ffffff;
+  color: #1b2b45;
+  border: 1px solid #d7e1f2;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
 .calculator__formula {
   margin: 0;
   font-weight: 500;
