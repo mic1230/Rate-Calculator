@@ -69,13 +69,14 @@
           <button type="button" id="new-section" class="calculator__new-section">
             Start new week
           </button>
-          <button type="button" id="download-csv" class="calculator__download">
-            Download CSV
+          <button type="button" id="download-xlsx" class="calculator__download">
+            Download Excel
           </button>
         </div>
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
     <script>
       const form = document.getElementById('calculator-form');
       const resultMessage = document.getElementById('result-message');
@@ -86,7 +87,7 @@
       const historyTotal = document.getElementById('history-total');
       const resetHistoryButton = document.getElementById('reset-history');
       const newSectionButton = document.getElementById('new-section');
-      const downloadCsvButton = document.getElementById('download-csv');
+      const downloadXlsxButton = document.getElementById('download-xlsx');
 
       const MAX_RATE = 0.1;
       const MIN_RATE = 0.03;
@@ -105,16 +106,53 @@
         return value.toLocaleString('en-US', { maximumFractionDigits: 0 });
       }
 
-      function escapeCsv(value) {
-        const stringValue = String(value ?? '');
-        if (/[",\n]/.test(stringValue)) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
-        }
-        return stringValue;
+      function applyRowStyle(row, style) {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          if (style.fill) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: style.fill },
+            };
+          }
+          if (style.font) {
+            cell.font = style.font;
+          }
+          if (style.alignment) {
+            cell.alignment = style.alignment;
+          }
+          if (style.border) {
+            cell.border = style.border;
+          }
+        });
       }
 
-      function buildCsv(sections) {
-        const rows = [];
+      function buildWorkbook(sections) {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Dispatch Earnings Calculator';
+        const sheet = workbook.addWorksheet('Dispatch Calculations');
+        sheet.columns = [
+          { key: 'item', width: 18 },
+          { key: 'payout', width: 14 },
+          { key: 'miles', width: 10 },
+          { key: 'rate', width: 10 },
+          { key: 'earnings', width: 14 },
+          { key: 'avg', width: 14 },
+        ];
+
+        const headerFill = 'FFCCE6FF';
+        const weekFill = 'FFEDE2FF';
+        const totalFill = 'FFDFF5E1';
+        const overallFill = 'FFFFE3B3';
+        const loadFillA = 'FFF7FAFF';
+        const loadFillB = 'FFF0F6FF';
+        const thinBorder = {
+          top: { style: 'thin', color: { argb: 'FFD9E2F2' } },
+          left: { style: 'thin', color: { argb: 'FFD9E2F2' } },
+          bottom: { style: 'thin', color: { argb: 'FFD9E2F2' } },
+          right: { style: 'thin', color: { argb: 'FFD9E2F2' } },
+        };
+
         let overallEarnings = 0;
         let overallPayout = 0;
         let overallMiles = 0;
@@ -136,47 +174,98 @@
           overallEarnings += weekEarnings;
           overallPayout += weekPayout;
           overallMiles += weekMiles;
-          rows.push([weekLabel]);
-          rows.push(['Item', 'Payout', 'Miles', 'Rate', 'Earnings', 'Avg $/mile']);
+          const weekRow = sheet.addRow([weekLabel]);
+          sheet.mergeCells(weekRow.number, 1, weekRow.number, 6);
+          applyRowStyle(weekRow, {
+            fill: weekFill,
+            font: { bold: true },
+            alignment: { vertical: 'middle', horizontal: 'left' },
+            border: thinBorder,
+          });
+
+          const headerRow = sheet.addRow([
+            'Item',
+            'Payout',
+            'Miles',
+            'Rate',
+            'Earnings',
+            'Avg $/mile',
+          ]);
+          applyRowStyle(headerRow, {
+            fill: headerFill,
+            font: { bold: true },
+            border: thinBorder,
+          });
 
           if (!section.entries.length) {
-            rows.push(['No entries']);
+            const emptyRow = sheet.addRow(['No entries']);
+            sheet.mergeCells(emptyRow.number, 1, emptyRow.number, 6);
+            applyRowStyle(emptyRow, {
+              alignment: { vertical: 'middle', horizontal: 'left' },
+            });
           } else {
-            section.entries.forEach((entry) => {
+            section.entries.forEach((entry, entryIndex) => {
               const entryAvgPerMile = entry.miles > 0 ? entry.amount / entry.miles : 0;
-              rows.push([
+              const entryRow = sheet.addRow([
                 'Load',
-                formatCurrency(entry.amount),
-                formatNumber(entry.miles),
-                `${(entry.rate * 100).toFixed(2)}%`,
-                formatCurrency(entry.earnings),
-                formatCurrency(entryAvgPerMile),
+                entry.amount,
+                entry.miles,
+                entry.rate,
+                entry.earnings,
+                entryAvgPerMile,
               ]);
+              entryRow.getCell(2).numFmt = '$#,##0.00';
+              entryRow.getCell(3).numFmt = '#,##0';
+              entryRow.getCell(4).numFmt = '0.00%';
+              entryRow.getCell(5).numFmt = '$#,##0.00';
+              entryRow.getCell(6).numFmt = '$#,##0.00';
+              applyRowStyle(entryRow, {
+                fill: entryIndex % 2 === 0 ? loadFillA : loadFillB,
+                border: thinBorder,
+              });
             });
           }
 
-          rows.push([
+          const totalRow = sheet.addRow([
             'Week total',
-            formatCurrency(weekPayout),
-            formatNumber(weekMiles),
+            weekPayout,
+            weekMiles,
             '',
-            formatCurrency(weekEarnings),
-            formatCurrency(weekAvgPerMile),
+            weekEarnings,
+            weekAvgPerMile,
           ]);
-          rows.push([]);
+          totalRow.getCell(2).numFmt = '$#,##0.00';
+          totalRow.getCell(3).numFmt = '#,##0';
+          totalRow.getCell(5).numFmt = '$#,##0.00';
+          totalRow.getCell(6).numFmt = '$#,##0.00';
+          applyRowStyle(totalRow, {
+            fill: totalFill,
+            font: { bold: true },
+            border: thinBorder,
+          });
+          sheet.addRow([]);
         });
         if (sections.length) {
           const overallAvgPerMile = overallMiles > 0 ? overallPayout / overallMiles : 0;
-          rows.push([
+          const overallRow = sheet.addRow([
             'All weeks total',
-            formatCurrency(overallPayout),
-            formatNumber(overallMiles),
+            overallPayout,
+            overallMiles,
             '',
-            formatCurrency(overallEarnings),
-            formatCurrency(overallAvgPerMile),
+            overallEarnings,
+            overallAvgPerMile,
           ]);
+          overallRow.getCell(2).numFmt = '$#,##0.00';
+          overallRow.getCell(3).numFmt = '#,##0';
+          overallRow.getCell(5).numFmt = '$#,##0.00';
+          overallRow.getCell(6).numFmt = '$#,##0.00';
+          applyRowStyle(overallRow, {
+            fill: overallFill,
+            font: { bold: true },
+            border: thinBorder,
+          });
         }
-        return rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
+        return workbook;
       }
 
       function loadHistory() {
@@ -571,20 +660,29 @@
         renderHistory(historySectionsData);
       });
 
-      downloadCsvButton.addEventListener('click', () => {
-        const csv = buildCsv(historySectionsData);
-        if (!csv.trim()) {
+      downloadXlsxButton.addEventListener('click', async () => {
+        if (typeof ExcelJS === 'undefined') {
+          window.alert('Excel export is not available right now. Please reload the page.');
           return;
         }
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'dispatch-calculations.csv';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const workbook = buildWorkbook(historySectionsData);
+        try {
+          const buffer = await workbook.xlsx.writeBuffer();
+          const blob = new Blob([buffer], {
+            type:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'dispatch-calculations.xlsx';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } catch (error) {
+          window.alert('Could not generate the Excel file. Please try again.');
+        }
       });
     </script>
   </body>
