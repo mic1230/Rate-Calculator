@@ -114,22 +114,37 @@
       }
 
       function buildCsv(sections) {
-        const rows = [['Week', 'Payout', 'Miles', 'Rate', 'Earnings']];
+        const rows = [];
+        let overallTotal = 0;
         sections.forEach((section, index) => {
-          const sectionLabel = `Week ${index + 1}`;
+          const weekLabel = `Week ${index + 1}`;
+          const weekTotal = section.entries.reduce(
+            (sum, entry) => sum + entry.earnings,
+            0
+          );
+          overallTotal += weekTotal;
+          rows.push([weekLabel]);
+          rows.push(['Payout', 'Miles', 'Rate', 'Earnings']);
+
           if (!section.entries.length) {
-            return;
+            rows.push(['No entries']);
+          } else {
+            section.entries.forEach((entry) => {
+              rows.push([
+                formatCurrency(entry.amount),
+                formatNumber(entry.miles),
+                `${(entry.rate * 100).toFixed(2)}%`,
+                formatCurrency(entry.earnings),
+              ]);
+            });
           }
-          section.entries.forEach((entry) => {
-            rows.push([
-              sectionLabel,
-              formatCurrency(entry.amount),
-              formatNumber(entry.miles),
-              `${(entry.rate * 100).toFixed(2)}%`,
-              formatCurrency(entry.earnings),
-            ]);
-          });
+
+          rows.push(['Week total', '', '', formatCurrency(weekTotal)]);
+          rows.push([]);
         });
+        if (sections.length) {
+          rows.push(['All weeks total', '', '', formatCurrency(overallTotal)]);
+        }
         return rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
       }
 
