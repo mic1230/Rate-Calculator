@@ -346,6 +346,12 @@
       });
 
       resetHistoryButton.addEventListener('click', () => {
+        const shouldReset = window.confirm(
+          'Delete all calculations and sections? This cannot be undone.'
+        );
+        if (!shouldReset) {
+          return;
+        }
         historySectionsData = [{ id: `section-${Date.now()}`, entries: [] }];
         activeSectionId = historySectionsData[0].id;
         saveHistory(historySectionsData);

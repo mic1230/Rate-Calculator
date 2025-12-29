@@ -175,11 +175,15 @@ button:active {
 }
 
 .calculator__reset {
-  background: #eef2ff;
-  color: #2a3d68;
+  background: #ffe5e5;
+  color: #8a1c1c;
   padding: 0.5rem 0.9rem;
   border-radius: 10px;
   font-size: 0.9rem;
+}
+
+.calculator__reset:hover {
+  box-shadow: 0 10px 20px rgba(138, 28, 28, 0.18);
 }
 
 .calculator__reset:disabled {
