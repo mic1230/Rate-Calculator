@@ -60,24 +60,14 @@
             Reset
           </button>
         </div>
-        <div class="calculator__table-wrapper">
-          <table class="calculator__table" aria-label="Calculation history">
-            <thead>
-              <tr>
-                <th>Payout</th>
-                <th>Miles</th>
-                <th>Rate</th>
-                <th>Earnings</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="history-body"></tbody>
-          </table>
-        </div>
-        <div class="calculator__total">
-          <span>Total earnings</span>
+        <div id="history-sections" class="calculator__sections"></div>
+        <div class="calculator__overall">
+          <span>Total earnings (all sections)</span>
           <span id="history-total">$0.00</span>
         </div>
+        <button type="button" id="new-section" class="calculator__new-section">
+          Start new section
+        </button>
       </section>
     </main>
 
@@ -87,9 +77,10 @@
       const rateFormula = document.getElementById('rate-formula');
       const resultFormula = document.getElementById('result-formula');
       const resultExplanation = document.getElementById('result-explanation');
-      const historyBody = document.getElementById('history-body');
+      const historySections = document.getElementById('history-sections');
       const historyTotal = document.getElementById('history-total');
       const resetHistoryButton = document.getElementById('reset-history');
+      const newSectionButton = document.getElementById('new-section');
 
       const MAX_RATE = 0.1;
       const MIN_RATE = 0.03;
@@ -111,7 +102,13 @@
       function loadHistory() {
         try {
           const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-          return Array.isArray(stored) ? stored : [];
+          if (Array.isArray(stored)) {
+            if (stored.length && stored[0]?.entries) {
+              return stored;
+            }
+            return [{ id: `section-${Date.now()}`, entries: stored }];
+          }
+          return [];
         } catch (error) {
           return [];
         }
@@ -121,46 +118,99 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
       }
 
-      function renderHistory(entries) {
-        historyBody.innerHTML = '';
+      function renderHistory(sections) {
+        historySections.innerHTML = '';
 
-        if (!entries.length) {
-          const emptyRow = document.createElement('tr');
-          const emptyCell = document.createElement('td');
-          emptyCell.colSpan = 5;
-          emptyCell.textContent = 'No saved calculations yet.';
-          emptyCell.className = 'calculator__empty';
-          emptyRow.appendChild(emptyCell);
-          historyBody.appendChild(emptyRow);
+        if (!sections.length) {
           historyTotal.textContent = formatCurrency(0);
           resetHistoryButton.disabled = true;
           return;
         }
 
-        let total = 0;
-        entries.forEach((entry) => {
-          total += entry.earnings;
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${formatCurrency(entry.amount)}</td>
-            <td>${formatNumber(entry.miles)}</td>
-            <td>${(entry.rate * 100).toFixed(2)}%</td>
-            <td>${formatCurrency(entry.earnings)}</td>
-            <td>
-              <button type="button" class="calculator__delete" data-id="${entry.id}">
-                -
-              </button>
-            </td>
+        let overallTotal = 0;
+        sections.forEach((section, index) => {
+          const sectionTotal = section.entries.reduce(
+            (sum, entry) => sum + entry.earnings,
+            0
+          );
+          overallTotal += sectionTotal;
+
+          const sectionEl = document.createElement('div');
+          sectionEl.className = 'calculator__section';
+          sectionEl.dataset.sectionId = section.id;
+
+          const sectionHeader = document.createElement('div');
+          sectionHeader.className = 'calculator__section-header';
+          sectionHeader.innerHTML = `<h3>Section ${index + 1}</h3>`;
+
+          const tableWrapper = document.createElement('div');
+          tableWrapper.className = 'calculator__table-wrapper';
+          const table = document.createElement('table');
+          table.className = 'calculator__table';
+          table.setAttribute('aria-label', `Calculation history section ${index + 1}`);
+          table.innerHTML = `
+            <thead>
+              <tr>
+                <th>Payout</th>
+                <th>Miles</th>
+                <th>Rate</th>
+                <th>Earnings</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
           `;
-          historyBody.appendChild(row);
+
+          const tbody = table.querySelector('tbody');
+          if (!section.entries.length) {
+            const emptyRow = document.createElement('tr');
+            const emptyCell = document.createElement('td');
+            emptyCell.colSpan = 5;
+            emptyCell.textContent = 'No saved calculations in this section yet.';
+            emptyCell.className = 'calculator__empty';
+            emptyRow.appendChild(emptyCell);
+            tbody.appendChild(emptyRow);
+          } else {
+            section.entries.forEach((entry) => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${formatCurrency(entry.amount)}</td>
+                <td>${formatNumber(entry.miles)}</td>
+                <td>${(entry.rate * 100).toFixed(2)}%</td>
+                <td>${formatCurrency(entry.earnings)}</td>
+                <td>
+                  <button type="button" class="calculator__delete" data-id="${entry.id}" data-section="${section.id}">
+                    -
+                  </button>
+                </td>
+              `;
+              tbody.appendChild(row);
+            });
+          }
+
+          const sectionTotalEl = document.createElement('div');
+          sectionTotalEl.className = 'calculator__total';
+          sectionTotalEl.innerHTML = `
+            <span>Total earnings</span>
+            <span>${formatCurrency(sectionTotal)}</span>
+          `;
+
+          tableWrapper.appendChild(table);
+          sectionEl.appendChild(sectionHeader);
+          sectionEl.appendChild(tableWrapper);
+          sectionEl.appendChild(sectionTotalEl);
+          historySections.appendChild(sectionEl);
         });
 
-        historyTotal.textContent = formatCurrency(total);
-        resetHistoryButton.disabled = false;
+        historyTotal.textContent = formatCurrency(overallTotal);
+        resetHistoryButton.disabled = overallTotal === 0;
       }
 
-      let historyEntries = loadHistory();
-      renderHistory(historyEntries);
+      let historySectionsData = loadHistory();
+      if (!historySectionsData.length) {
+        historySectionsData = [{ id: `section-${Date.now()}`, entries: [] }];
+      }
+      renderHistory(historySectionsData);
 
       function calculateRate(miles) {
         const clampedMiles = Math.max(0, miles);
@@ -246,12 +296,13 @@
           rate,
           earnings,
         };
-        historyEntries = [newEntry, ...historyEntries];
-        saveHistory(historyEntries);
-        renderHistory(historyEntries);
+        const currentSection = historySectionsData[historySectionsData.length - 1];
+        currentSection.entries = [newEntry, ...currentSection.entries];
+        saveHistory(historySectionsData);
+        renderHistory(historySectionsData);
       });
 
-      historyBody.addEventListener('click', (event) => {
+      historySections.addEventListener('click', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) {
           return;
@@ -260,15 +311,26 @@
           return;
         }
         const id = target.dataset.id;
-        historyEntries = historyEntries.filter((entry) => entry.id !== id);
-        saveHistory(historyEntries);
-        renderHistory(historyEntries);
+        const sectionId = target.dataset.section;
+        const section = historySectionsData.find((item) => item.id === sectionId);
+        if (!section) {
+          return;
+        }
+        section.entries = section.entries.filter((entry) => entry.id !== id);
+        saveHistory(historySectionsData);
+        renderHistory(historySectionsData);
       });
 
       resetHistoryButton.addEventListener('click', () => {
-        historyEntries = [];
-        saveHistory(historyEntries);
-        renderHistory(historyEntries);
+        historySectionsData = [{ id: `section-${Date.now()}`, entries: [] }];
+        saveHistory(historySectionsData);
+        renderHistory(historySectionsData);
+      });
+
+      newSectionButton.addEventListener('click', () => {
+        historySectionsData.push({ id: `section-${Date.now()}`, entries: [] });
+        saveHistory(historySectionsData);
+        renderHistory(historySectionsData);
       });
     </script>
   </body>

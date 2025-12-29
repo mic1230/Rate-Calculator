@@ -118,6 +118,28 @@ button:active {
   gap: 1rem;
 }
 
+.calculator__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.calculator__section {
+  border: 1px solid #e6ecf5;
+  border-radius: 14px;
+  padding: 1rem;
+  background: #fbfcff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.calculator__section-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1b2b45;
+}
+
 .calculator__history-header {
   display: flex;
   align-items: center;
@@ -196,6 +218,26 @@ button:active {
   background: #f5f8ff;
   padding: 0.75rem 0.9rem;
   border-radius: 12px;
+}
+
+.calculator__overall {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  color: #1b2b45;
+  background: #eef2ff;
+  padding: 0.8rem 0.95rem;
+  border-radius: 12px;
+}
+
+.calculator__new-section {
+  align-self: flex-start;
+  background: #1b2b45;
+  color: #ffffff;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
 }
 
 .calculator__formula {
