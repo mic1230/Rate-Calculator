@@ -17,19 +17,6 @@
       </header>
 
       <form id="calculator-form" class="calculator__form" autocomplete="off">
-        <label class="calculator__label" for="miles">
-          Miles driven
-          <input
-            id="miles"
-            name="miles"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="e.g. 475"
-            required
-          />
-        </label>
-
         <label class="calculator__label" for="amount">
           Load payout (USD)
           <input
@@ -43,6 +30,19 @@
           />
         </label>
 
+        <label class="calculator__label" for="miles">
+          Miles driven
+          <input
+            id="miles"
+            name="miles"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="e.g. 475"
+            required
+          />
+        </label>
+
         <button type="submit">Calculate earnings</button>
       </form>
 
@@ -52,6 +52,33 @@
         <p id="result-formula" class="calculator__formula" hidden></p>
         <p id="result-explanation" class="calculator__explanation" hidden></p>
       </section>
+
+      <section class="calculator__history" aria-live="polite">
+        <div class="calculator__history-header">
+          <h2>Saved calculations</h2>
+          <button type="button" id="reset-history" class="calculator__reset" disabled>
+            Reset
+          </button>
+        </div>
+        <div class="calculator__table-wrapper">
+          <table class="calculator__table" aria-label="Calculation history">
+            <thead>
+              <tr>
+                <th>Payout</th>
+                <th>Miles</th>
+                <th>Rate</th>
+                <th>Earnings</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+        <div class="calculator__total">
+          <span>Total earnings</span>
+          <span id="history-total">$0.00</span>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -60,11 +87,15 @@
       const rateFormula = document.getElementById('rate-formula');
       const resultFormula = document.getElementById('result-formula');
       const resultExplanation = document.getElementById('result-explanation');
+      const historyBody = document.getElementById('history-body');
+      const historyTotal = document.getElementById('history-total');
+      const resetHistoryButton = document.getElementById('reset-history');
 
       const MAX_RATE = 0.1;
       const MIN_RATE = 0.03;
       const RATE_THRESHOLD = 500;
       const RATE_SLOPE = (MAX_RATE - MIN_RATE) / RATE_THRESHOLD;
+      const STORAGE_KEY = 'dispatch-calculator-history';
 
       function formatCurrency(value) {
         return value.toLocaleString('en-US', {
@@ -72,6 +103,64 @@
           currency: 'USD',
         });
       }
+
+      function formatNumber(value) {
+        return value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+      }
+
+      function loadHistory() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          return Array.isArray(stored) ? stored : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function saveHistory(entries) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      }
+
+      function renderHistory(entries) {
+        historyBody.innerHTML = '';
+
+        if (!entries.length) {
+          const emptyRow = document.createElement('tr');
+          const emptyCell = document.createElement('td');
+          emptyCell.colSpan = 5;
+          emptyCell.textContent = 'No saved calculations yet.';
+          emptyCell.className = 'calculator__empty';
+          emptyRow.appendChild(emptyCell);
+          historyBody.appendChild(emptyRow);
+          historyTotal.textContent = formatCurrency(0);
+          resetHistoryButton.disabled = true;
+          return;
+        }
+
+        let total = 0;
+        entries.forEach((entry) => {
+          total += entry.earnings;
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${formatCurrency(entry.amount)}</td>
+            <td>${formatNumber(entry.miles)}</td>
+            <td>${(entry.rate * 100).toFixed(2)}%</td>
+            <td>${formatCurrency(entry.earnings)}</td>
+            <td>
+              <button type="button" class="calculator__delete" data-id="${entry.id}">
+                -
+              </button>
+            </td>
+          `;
+          historyBody.appendChild(row);
+        });
+
+        historyTotal.textContent = formatCurrency(total);
+        resetHistoryButton.disabled = false;
+      }
+
+      let historyEntries = loadHistory();
+      renderHistory(historyEntries);
 
       function calculateRate(miles) {
         const clampedMiles = Math.max(0, miles);
@@ -149,6 +238,37 @@
         rateFormula.hidden = false;
         resultFormula.hidden = false;
         resultExplanation.hidden = false;
+
+        const newEntry = {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          miles,
+          amount,
+          rate,
+          earnings,
+        };
+        historyEntries = [newEntry, ...historyEntries];
+        saveHistory(historyEntries);
+        renderHistory(historyEntries);
+      });
+
+      historyBody.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        if (!target.classList.contains('calculator__delete')) {
+          return;
+        }
+        const id = target.dataset.id;
+        historyEntries = historyEntries.filter((entry) => entry.id !== id);
+        saveHistory(historyEntries);
+        renderHistory(historyEntries);
+      });
+
+      resetHistoryButton.addEventListener('click', () => {
+        historyEntries = [];
+        saveHistory(historyEntries);
+        renderHistory(historyEntries);
       });
     </script>
   </body>
