@@ -115,35 +115,66 @@
 
       function buildCsv(sections) {
         const rows = [];
-        let overallTotal = 0;
+        let overallEarnings = 0;
+        let overallPayout = 0;
+        let overallMiles = 0;
         sections.forEach((section, index) => {
           const weekLabel = `Week ${index + 1}`;
-          const weekTotal = section.entries.reduce(
+          const weekPayout = section.entries.reduce(
+            (sum, entry) => sum + entry.amount,
+            0
+          );
+          const weekMiles = section.entries.reduce(
+            (sum, entry) => sum + entry.miles,
+            0
+          );
+          const weekEarnings = section.entries.reduce(
             (sum, entry) => sum + entry.earnings,
             0
           );
-          overallTotal += weekTotal;
+          const weekAvgPerMile = weekMiles > 0 ? weekPayout / weekMiles : 0;
+          overallEarnings += weekEarnings;
+          overallPayout += weekPayout;
+          overallMiles += weekMiles;
           rows.push([weekLabel]);
-          rows.push(['Payout', 'Miles', 'Rate', 'Earnings']);
+          rows.push(['Item', 'Payout', 'Miles', 'Rate', 'Earnings', 'Avg $/mile']);
 
           if (!section.entries.length) {
             rows.push(['No entries']);
           } else {
             section.entries.forEach((entry) => {
+              const entryAvgPerMile = entry.miles > 0 ? entry.amount / entry.miles : 0;
               rows.push([
+                'Load',
                 formatCurrency(entry.amount),
                 formatNumber(entry.miles),
                 `${(entry.rate * 100).toFixed(2)}%`,
                 formatCurrency(entry.earnings),
+                formatCurrency(entryAvgPerMile),
               ]);
             });
           }
 
-          rows.push(['Week total', '', '', formatCurrency(weekTotal)]);
+          rows.push([
+            'Week total',
+            formatCurrency(weekPayout),
+            formatNumber(weekMiles),
+            '',
+            formatCurrency(weekEarnings),
+            formatCurrency(weekAvgPerMile),
+          ]);
           rows.push([]);
         });
         if (sections.length) {
-          rows.push(['All weeks total', '', '', formatCurrency(overallTotal)]);
+          const overallAvgPerMile = overallMiles > 0 ? overallPayout / overallMiles : 0;
+          rows.push([
+            'All weeks total',
+            formatCurrency(overallPayout),
+            formatNumber(overallMiles),
+            '',
+            formatCurrency(overallEarnings),
+            formatCurrency(overallAvgPerMile),
+          ]);
         }
         return rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
       }
