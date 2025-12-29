@@ -136,12 +136,20 @@
           overallTotal += sectionTotal;
 
           const sectionEl = document.createElement('div');
-          sectionEl.className = 'calculator__section';
+          sectionEl.className =
+            section.id === activeSectionId
+              ? 'calculator__section calculator__section--active'
+              : 'calculator__section';
           sectionEl.dataset.sectionId = section.id;
 
           const sectionHeader = document.createElement('div');
           sectionHeader.className = 'calculator__section-header';
-          sectionHeader.innerHTML = `<h3>Section ${index + 1}</h3>`;
+          sectionHeader.innerHTML = `
+            <h3>Section ${index + 1}</h3>
+            <button type="button" class="calculator__edit" data-section="${section.id}">
+              Edit
+            </button>
+          `;
 
           const tableWrapper = document.createElement('div');
           tableWrapper.className = 'calculator__table-wrapper';
@@ -210,6 +218,8 @@
       if (!historySectionsData.length) {
         historySectionsData = [{ id: `section-${Date.now()}`, entries: [] }];
       }
+      let activeSectionId =
+        historySectionsData[historySectionsData.length - 1]?.id;
       renderHistory(historySectionsData);
 
       function calculateRate(miles) {
@@ -296,7 +306,10 @@
           rate,
           earnings,
         };
-        const currentSection = historySectionsData[historySectionsData.length - 1];
+        const currentSection =
+          historySectionsData.find((section) => section.id === activeSectionId) ||
+          historySectionsData[historySectionsData.length - 1];
+        activeSectionId = currentSection.id;
         currentSection.entries = [newEntry, ...currentSection.entries];
         saveHistory(historySectionsData);
         renderHistory(historySectionsData);
@@ -305,6 +318,12 @@
       historySections.addEventListener('click', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        if (target.classList.contains('calculator__edit')) {
+          const sectionId = target.dataset.section;
+          activeSectionId = sectionId;
+          renderHistory(historySectionsData);
           return;
         }
         if (!target.classList.contains('calculator__delete')) {
@@ -323,12 +342,15 @@
 
       resetHistoryButton.addEventListener('click', () => {
         historySectionsData = [{ id: `section-${Date.now()}`, entries: [] }];
+        activeSectionId = historySectionsData[0].id;
         saveHistory(historySectionsData);
         renderHistory(historySectionsData);
       });
 
       newSectionButton.addEventListener('click', () => {
-        historySectionsData.push({ id: `section-${Date.now()}`, entries: [] });
+        const newSection = { id: `section-${Date.now()}`, entries: [] };
+        historySectionsData.push(newSection);
+        activeSectionId = newSection.id;
         saveHistory(historySectionsData);
         renderHistory(historySectionsData);
       });
