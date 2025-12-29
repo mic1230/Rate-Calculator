@@ -181,6 +181,10 @@
           } else {
             section.entries.forEach((entry) => {
               const row = document.createElement('tr');
+              row.className = 'calculator__row';
+              row.draggable = true;
+              row.dataset.id = entry.id;
+              row.dataset.section = section.id;
               row.innerHTML = `
                 <td>${formatCurrency(entry.amount)}</td>
                 <td>${formatNumber(entry.miles)}</td>
@@ -220,6 +224,7 @@
       }
       let activeSectionId =
         historySectionsData[historySectionsData.length - 1]?.id;
+      let dragState = null;
       renderHistory(historySectionsData);
 
       function calculateRate(miles) {
@@ -343,6 +348,131 @@
       resetHistoryButton.addEventListener('click', () => {
         historySectionsData = [{ id: `section-${Date.now()}`, entries: [] }];
         activeSectionId = historySectionsData[0].id;
+        saveHistory(historySectionsData);
+        renderHistory(historySectionsData);
+      });
+
+      historySections.addEventListener('dragstart', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        const row = target.closest('tr');
+        if (!row || !row.dataset.id || !row.dataset.section) {
+          return;
+        }
+        dragState = {
+          entryId: row.dataset.id,
+          sectionId: row.dataset.section,
+        };
+        row.classList.add('calculator__row--dragging');
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', row.dataset.id);
+        }
+      });
+
+      historySections.addEventListener('dragend', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        const row = target.closest('tr');
+        if (row) {
+          row.classList.remove('calculator__row--dragging');
+        }
+        historySections.querySelectorAll('.calculator__row--over').forEach((item) => {
+          item.classList.remove('calculator__row--over');
+        });
+        dragState = null;
+      });
+
+      historySections.addEventListener('dragover', (event) => {
+        if (!dragState) {
+          return;
+        }
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        const sectionElement = target.closest('.calculator__section');
+        if (!sectionElement || sectionElement.dataset.sectionId !== dragState.sectionId) {
+          return;
+        }
+        const row = target.closest('tr');
+        if (row && row.dataset.section === dragState.sectionId) {
+          event.preventDefault();
+          historySections.querySelectorAll('.calculator__row--over').forEach((item) => {
+            item.classList.remove('calculator__row--over');
+          });
+          row.classList.add('calculator__row--over');
+        } else {
+          const tbody = target.closest('tbody');
+          if (tbody) {
+            event.preventDefault();
+          }
+        }
+      });
+
+      historySections.addEventListener('dragleave', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        const row = target.closest('tr');
+        if (row) {
+          row.classList.remove('calculator__row--over');
+        }
+      });
+
+      historySections.addEventListener('drop', (event) => {
+        if (!dragState) {
+          return;
+        }
+        event.preventDefault();
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        const sectionElement = target.closest('.calculator__section');
+        if (!sectionElement || sectionElement.dataset.sectionId !== dragState.sectionId) {
+          return;
+        }
+        const section = historySectionsData.find(
+          (item) => item.id === dragState.sectionId
+        );
+        if (!section) {
+          return;
+        }
+        const fromIndex = section.entries.findIndex(
+          (entry) => entry.id === dragState.entryId
+        );
+        if (fromIndex === -1) {
+          return;
+        }
+
+        const row = target.closest('tr');
+        let targetId = null;
+        if (row && row.dataset.section === dragState.sectionId) {
+          targetId = row.dataset.id;
+          row.classList.remove('calculator__row--over');
+        }
+
+        if (targetId === dragState.entryId) {
+          return;
+        }
+
+        const [moved] = section.entries.splice(fromIndex, 1);
+        let insertIndex = section.entries.length;
+        if (targetId) {
+          const targetIndex = section.entries.findIndex(
+            (entry) => entry.id === targetId
+          );
+          if (targetIndex !== -1) {
+            insertIndex = targetIndex;
+          }
+        }
+        section.entries.splice(insertIndex, 0, moved);
         saveHistory(historySectionsData);
         renderHistory(historySectionsData);
       });

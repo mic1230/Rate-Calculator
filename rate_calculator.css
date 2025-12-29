@@ -211,6 +211,18 @@ button:active {
   font-weight: 600;
 }
 
+.calculator__row {
+  cursor: grab;
+}
+
+.calculator__row--dragging {
+  opacity: 0.6;
+}
+
+.calculator__row--over td {
+  background: #eef2ff;
+}
+
 .calculator__empty {
   text-align: center;
   color: #6b7a94;
