@@ -207,7 +207,7 @@
             section.entries.forEach((entry, entryIndex) => {
               const entryAvgPerMile = entry.miles > 0 ? entry.amount / entry.miles : 0;
               const entryRow = sheet.addRow([
-                'Load',
+                `Load ${entryIndex + 1}`,
                 entry.amount,
                 entry.miles,
                 entry.rate,
